@@ -1,0 +1,337 @@
+/* onboarding.css — JobPilot setup wizard */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f0f4ff;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #1a1a2e;
+}
+
+/* ── Wizard shell ─────────────────────────────────────────────────────────── */
+
+.wizard {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.12);
+  width: 100%;
+  max-width: 560px;
+  padding: 32px 36px 28px;
+  position: relative;
+}
+
+/* ── Progress ─────────────────────────────────────────────────────────────── */
+
+.progress-track {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #818cf8);
+  border-radius: 99px;
+  transition: width .4s ease;
+  width: 0%;
+}
+
+.step-label {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 28px;
+  letter-spacing: .04em;
+}
+
+/* ── Steps ────────────────────────────────────────────────────────────────── */
+
+.step { display: none; }
+.step.active { display: block; }
+
+.logo {
+  font-size: 40px;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.done-logo { font-size: 56px; text-align: center; margin-bottom: 16px; }
+
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+/* ── Card ─────────────────────────────────────────────────────────────────── */
+
+.card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.card.scrollable {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 14px;
+}
+
+.powered-by {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #9ca3af;
+  margin-bottom: 10px;
+}
+
+.hint {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+/* ── Form elements ────────────────────────────────────────────────────────── */
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  font-family: inherit;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+}
+
+textarea { resize: vertical; min-height: 72px; }
+
+.field-hint {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.field-hint a { color: #6366f1; text-decoration: none; }
+.field-hint a:hover { text-decoration: underline; }
+
+.form-group { margin-bottom: 16px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── Resume auto-fill status badges ───────────────────────────────────────── */
+
+.form-group.field-filled input,
+.form-group.field-filled textarea {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.form-group.field-needs-input input,
+.form-group.field-needs-input textarea {
+  border-color: #fcd34d;
+}
+
+.field-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  vertical-align: middle;
+}
+
+.field-badge--filled { background: #dcfce7; color: #15803d; }
+.field-badge--needed { background: #fef3c7; color: #92400e; }
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin: 20px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.muted { font-weight: 400; color: #9ca3af; }
+
+/* ── Input row (key + toggle) ─────────────────────────────────────────────── */
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.input-row input { flex: 1; }
+
+.icon-btn {
+  padding: 0 10px;
+  background: #fff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: border-color .15s;
+}
+
+.icon-btn:hover { border-color: #6366f1; }
+
+/* ── Upload zone ──────────────────────────────────────────────────────────── */
+
+.upload-zone {
+  border: 2px dashed #c7d2fe;
+  border-radius: 10px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  background: #fff;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+  background: #eef2ff;
+  border-color: #6366f1;
+}
+
+.upload-zone.processing {
+  opacity: .6;
+  pointer-events: none;
+}
+
+.upload-icon { font-size: 32px; margin-bottom: 10px; }
+
+.upload-label {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.upload-label .link { color: #6366f1; text-decoration: underline; }
+
+.upload-hint { font-size: 12px; color: #9ca3af; }
+
+/* ── Upload status ────────────────────────────────────────────────────────── */
+
+.upload-status {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.upload-status.hidden { display: none; }
+.upload-status.info    { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.upload-status.success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.upload-status.warn    { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.upload-status.error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* ── Navigation ───────────────────────────────────────────────────────────── */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-right { display: flex; gap: 8px; align-items: center; }
+
+.btn-primary {
+  padding: 10px 22px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+
+.btn-primary:hover { background: #4f46e5; }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+.btn-ghost {
+  padding: 10px 18px;
+  background: transparent;
+  color: #6b7280;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+
+.btn-ghost:hover { border-color: #9ca3af; color: #374151; }
+
+/* ── Done screen ──────────────────────────────────────────────────────────── */
+
+#stepDone { text-align: center; }
+#stepDone h1 { font-size: 26px; }
+#stepDone .subtitle { max-width: 380px; margin: 0 auto 24px; }
+
+.done-card {
+  text-align: left;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.done-tip { font-size: 13px; color: #15803d; line-height: 1.6; }
+
+.btn-close {
+  display: block;
+  margin: 0 auto;
+  padding: 12px 32px;
+}
+
+/* ── Scrollbar styling ────────────────────────────────────────────────────── */
+
+.scrollable::-webkit-scrollbar { width: 4px; }
+.scrollable::-webkit-scrollbar-track { background: transparent; }
+.scrollable::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }

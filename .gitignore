@@ -1,0 +1,16 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts / dependencies (none currently, kept for future-proofing)
+node_modules/
+dist/
+*.log
+
+# Local Claude Code settings (personal, not shared)
+.claude/settings.local.json

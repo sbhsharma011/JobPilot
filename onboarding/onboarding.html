@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>JobPilot — Setup</title>
+  <link rel="stylesheet" href="onboarding.css" />
+</head>
+<body>
+
+<div class="wizard">
+
+  <!-- Progress bar -->
+  <div class="progress-track">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="step-label" id="stepLabel">Step 1 of 4</div>
+
+  <!-- ── Step 1: API Key ─────────────────────────────────────────── -->
+  <div class="step active" id="step1">
+    <div class="logo">⚡</div>
+    <h1>Welcome to JobPilot</h1>
+    <p class="subtitle">Auto-fill any job application in seconds using AI.</p>
+
+    <div class="card">
+      <div class="powered-by">Powered by <strong>Claude (Anthropic)</strong></div>
+      <p class="hint">JobPilot uses Claude to intelligently understand and fill complex application fields — screening questions, custom dropdowns, essay answers — on <em>any</em> career portal.</p>
+
+      <label for="apiKey">Anthropic API Key</label>
+      <div class="input-row">
+        <input type="password" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off" />
+        <button class="icon-btn" id="toggleKey" title="Show/hide key">👁</button>
+      </div>
+      <p class="field-hint">
+        Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>.
+        Basic field filling (name, email, phone) works without a key.
+      </p>
+    </div>
+
+    <div class="nav">
+      <span></span>
+      <button class="btn-primary" id="step1Next">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 2: Resume Upload ───────────────────────────────────── -->
+  <div class="step" id="step2">
+    <div class="logo">📄</div>
+    <h1>Upload Your Resume</h1>
+    <p class="subtitle">We'll extract your information automatically.<br/>Nothing leaves your browser except to the Claude API.</p>
+
+    <div class="card">
+      <div class="upload-zone" id="uploadZone">
+        <div class="upload-icon">📎</div>
+        <div class="upload-label">Drop your resume here or <span class="link">click to browse</span></div>
+        <div class="upload-hint">PDF, DOCX, or TXT — max 5 MB</div>
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt" hidden />
+      </div>
+      <div id="uploadStatus" class="upload-status hidden"></div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-ghost" id="step2Back">← Back</button>
+      <div class="nav-right">
+        <button class="btn-ghost" id="step2Skip">Skip</button>
+        <button class="btn-primary" id="step2Next" disabled>Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Step 3: Personal Details ───────────────────────────────── -->
+  <div class="step" id="step3">
+    <div class="logo">👤</div>
+    <h1>Your Details</h1>
+    <p class="subtitle">Review and complete your information. These fill instantly — no AI call needed.</p>
+
+    <div class="card scrollable">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="s3FirstName">First Name *</label>
+          <input type="text" id="s3FirstName" placeholder="Jane" />
+        </div>
+        <div class="form-group">
+          <label for="s3LastName">Last Name *</label>
+          <input type="text" id="s3LastName" placeholder="Smith" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="s3Email">Email *</label>
+        <input type="email" id="s3Email" placeholder="jane@example.com" />
+      </div>
+      <div class="form-group">
+        <label for="s3Phone">Phone</label>
+        <input type="tel" id="s3Phone" placeholder="555-123-4567" />
+      </div>
+      <div class="form-group">
+        <label for="s3Location">Location (City, State)</label>
+        <input type="text" id="s3Location" placeholder="Atlanta, GA" />
+      </div>
+      <div class="form-group">
+        <label for="s3LinkedIn">LinkedIn URL</label>
+        <input type="url" id="s3LinkedIn" placeholder="https://linkedin.com/in/yourname" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="s3Website">Website / Portfolio</label>
+          <input type="url" id="s3Website" placeholder="https://yoursite.com" />
+        </div>
+        <div class="form-group">
+          <label for="s3Github">GitHub URL</label>
+          <input type="url" id="s3Github" placeholder="https://github.com/you" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="s3CurrentTitle">Current Job Title</label>
+        <input type="text" id="s3CurrentTitle" placeholder="Senior Software Engineer" />
+      </div>
+      <div class="form-group">
+        <label for="s3CurrentCompany">Current Company</label>
+        <input type="text" id="s3CurrentCompany" placeholder="Acme Corp" />
+      </div>
+      <div class="form-group">
+        <label for="s3YearsExp">Years of Experience</label>
+        <input type="number" id="s3YearsExp" placeholder="8" min="0" max="50" />
+      </div>
+      <div class="form-group">
+        <label for="s3Summary">Professional Summary</label>
+        <textarea id="s3Summary" rows="3" placeholder="Brief summary of your background..."></textarea>
+      </div>
+      <div class="form-group">
+        <label for="s3Skills">Key Skills (comma-separated)</label>
+        <input type="text" id="s3Skills" placeholder="Python, AWS, Project Management..." />
+      </div>
+      <div class="form-group">
+        <label for="s3Education">Highest Degree</label>
+        <input type="text" id="s3Education" placeholder="Bachelor of Science in Computer Science" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="s3University">University / College</label>
+          <input type="text" id="s3University" placeholder="State University" />
+        </div>
+        <div class="form-group">
+          <label for="s3GradYear">Graduation Year</label>
+          <input type="number" id="s3GradYear" placeholder="2018" min="1950" max="2100" />
+        </div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-ghost" id="step3Back">← Back</button>
+      <button class="btn-primary" id="step3Next">Continue →</button>
+    </div>
+  </div>
+
+  <!-- ── Step 4: Common Defaults ─────────────────────────────────── -->
+  <div class="step" id="step4">
+    <div class="logo">✅</div>
+    <h1>Application Defaults</h1>
+    <p class="subtitle">Pre-set answers to the questions every application asks.</p>
+
+    <div class="card scrollable">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="s4Salary">Expected Salary ($)</label>
+          <input type="number" id="s4Salary" placeholder="120000" />
+        </div>
+        <div class="form-group">
+          <label for="s4Notice">Notice Period</label>
+          <input type="text" id="s4Notice" placeholder="2 weeks" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="s4WorkAuth">Authorized to work in the US?</label>
+          <select id="s4WorkAuth">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="s4Sponsorship">Require sponsorship?</label>
+          <select id="s4Sponsorship">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="s4Remote">Open to remote?</label>
+          <select id="s4Remote">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="s4Relocate">Willing to relocate?</label>
+          <select id="s4Relocate">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-title">EEO Defaults <span class="muted">(optional — used only when asked)</span></div>
+
+      <div class="form-group">
+        <label for="s4Veteran">Veteran Status</label>
+        <select id="s4Veteran">
+          <option value="I am not a protected veteran">I am not a protected veteran</option>
+          <option value="I prefer not to answer">I prefer not to answer</option>
+          <option value="I identify as one or more of the classifications">Protected veteran</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="s4Disability">Disability Status</label>
+          <select id="s4Disability">
+            <option value="I don't wish to answer">I don't wish to answer</option>
+            <option value="No, I don't have a disability">No</option>
+            <option value="Yes, I have a disability">Yes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="s4Gender">Gender</label>
+          <select id="s4Gender">
+            <option value="I don't wish to answer">Prefer not to say</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Non-binary">Non-binary</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="s4Ethnicity">Ethnicity</label>
+        <select id="s4Ethnicity">
+          <option value="I don't wish to answer">Prefer not to say</option>
+          <option value="Asian">Asian</option>
+          <option value="Black or African American">Black or African American</option>
+          <option value="Hispanic or Latino">Hispanic or Latino</option>
+          <option value="White">White</option>
+          <option value="Two or more races">Two or more races</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-ghost" id="step4Back">← Back</button>
+      <button class="btn-primary" id="step4Finish">Finish Setup ✓</button>
+    </div>
+  </div>
+
+  <!-- ── Done ───────────────────────────────────────────────────── -->
+  <div class="step" id="stepDone">
+    <div class="logo done-logo">🎉</div>
+    <h1>You're all set!</h1>
+    <p class="subtitle">Open any job application page and click the <strong>JobPilot</strong> icon to auto-fill in seconds.</p>
+
+    <div class="card done-card">
+      <div class="done-tip">💡 <strong>Tip:</strong> You can always update your profile in <em>Settings</em> from the extension popup.</div>
+    </div>
+
+    <button class="btn-primary btn-close" id="closeBtn">Close this tab</button>
+  </div>
+
+</div>
+
+<script src="../utils/resumeParser.js"></script>
+<script src="onboarding.js"></script>
+</body>
+</html>

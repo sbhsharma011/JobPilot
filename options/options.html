@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobPilot — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <div class="logo">
+        <svg width="26" height="26" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="22" height="22" rx="5" fill="#0a66c2"/>
+          <path d="M5 8h12M5 11h8M5 14h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">JobPilot</span>
+      </div>
+      <p class="page-subtitle">Profile &amp; Settings</p>
+    </header>
+
+    <form id="profileForm" class="form" autocomplete="off" novalidate>
+
+      <!-- ── Personal Info ─────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-title">Personal Info</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" name="firstName" placeholder="Jane">
+          </div>
+          <div class="field">
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" name="lastName" placeholder="Smith">
+          </div>
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com">
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" placeholder="555-123-4567">
+          </div>
+          <div class="field field--full">
+            <label for="location">Location (City, State)</label>
+            <input type="text" id="location" name="location" placeholder="Atlanta, GA">
+          </div>
+          <div class="field">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city" placeholder="Atlanta">
+          </div>
+          <div class="field">
+            <label for="state">State</label>
+            <input type="text" id="state" name="state" placeholder="Georgia">
+          </div>
+          <div class="field">
+            <label for="zip">ZIP Code</label>
+            <input type="text" id="zip" name="zip" placeholder="30301">
+          </div>
+          <div class="field field--full">
+            <label for="linkedin">LinkedIn URL</label>
+            <input type="url" id="linkedin" name="linkedin" placeholder="https://www.linkedin.com/in/you">
+          </div>
+          <div class="field">
+            <label for="website">Website / Portfolio</label>
+            <input type="url" id="website" name="website" placeholder="https://yoursite.com">
+          </div>
+          <div class="field">
+            <label for="github">GitHub URL</label>
+            <input type="url" id="github" name="github" placeholder="https://github.com/you">
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Update Resume ─────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-title">Update Resume</h2>
+        <p class="section-hint">
+          Uploaded a new resume? Rebuild your Professional Summary and Skills below from it.
+          Nothing leaves your browser except to the Claude API.
+        </p>
+        <div class="upload-zone" id="resumeUploadZone">
+          <div class="upload-icon">📎</div>
+          <div class="upload-label">Drop your resume here or <span class="link">click to browse</span></div>
+          <div class="upload-hint">PDF, DOCX, or TXT — max 5 MB</div>
+          <input type="file" id="resumeFileInput" accept=".pdf,.doc,.docx,.txt" hidden>
+        </div>
+        <div id="resumeUploadStatus" class="upload-status hidden"></div>
+      </section>
+
+      <!-- ── Work Details ──────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-title">Work Details</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="currentTitle">Current Title</label>
+            <input type="text" id="currentTitle" name="currentTitle" placeholder="Senior Software Engineer">
+          </div>
+          <div class="field">
+            <label for="currentCompany">Current Company</label>
+            <input type="text" id="currentCompany" name="currentCompany" placeholder="Acme Corp">
+          </div>
+          <div class="field">
+            <label for="yearsExperience">Years of Experience</label>
+            <input type="number" id="yearsExperience" name="yearsExperience" min="0" max="60" placeholder="8">
+          </div>
+          <div class="field">
+            <label for="salaryExpectation">Salary Expectation ($)</label>
+            <input type="number" id="salaryExpectation" name="salaryExpectation" min="0" placeholder="120000">
+          </div>
+          <div class="field">
+            <label for="noticePeriod">Notice Period</label>
+            <input type="text" id="noticePeriod" name="noticePeriod" placeholder="2 weeks">
+          </div>
+          <div class="field field--full">
+            <label for="summary">Professional Summary</label>
+            <textarea id="summary" name="summary" rows="3" placeholder="Brief summary for cover letters and screening questions..."></textarea>
+          </div>
+          <div class="field field--full">
+            <label for="skills">Skills (comma-separated)</label>
+            <textarea id="skills" name="skills" rows="2" placeholder="Agile, AWS, Python, ..."></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Education ─────────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-title">Education</h2>
+        <div class="grid-2">
+          <div class="field field--full">
+            <label for="education">Highest Degree</label>
+            <input type="text" id="education" name="education" placeholder="Bachelor of Science in Computer Science">
+          </div>
+          <div class="field">
+            <label for="university">University / College</label>
+            <input type="text" id="university" name="university" placeholder="State University">
+          </div>
+          <div class="field">
+            <label for="graduationYear">Graduation Year</label>
+            <input type="number" id="graduationYear" name="graduationYear" min="1950" max="2100" placeholder="2018">
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Application Defaults ──────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-title">Application Defaults</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label for="workAuthorized">Authorized to Work in US?</label>
+            <select id="workAuthorized" name="workAuthorized">
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="requireSponsorship">Require Visa Sponsorship?</label>
+            <select id="requireSponsorship" name="requireSponsorship">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="willingToRelocate">Willing to Relocate?</label>
+            <select id="willingToRelocate" name="willingToRelocate">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="openToRemote">Open to Remote?</label>
+            <select id="openToRemote" name="openToRemote">
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="currentlyEmployed">Currently Employed?</label>
+            <select id="currentlyEmployed" name="currentlyEmployed">
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── EEO Defaults ──────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-title">EEO / Diversity Defaults</h2>
+        <p class="section-hint">These values are used for optional Equal Employment Opportunity questions.</p>
+        <div class="grid-2">
+          <div class="field">
+            <label for="veteranStatus">Veteran Status</label>
+            <input type="text" id="veteranStatus" name="veteranStatus" placeholder="I am not a protected veteran">
+          </div>
+          <div class="field">
+            <label for="disabilityStatus">Disability Status</label>
+            <input type="text" id="disabilityStatus" name="disabilityStatus" placeholder="I don't wish to answer">
+          </div>
+          <div class="field">
+            <label for="gender">Gender</label>
+            <input type="text" id="gender" name="gender" placeholder="I don't wish to answer">
+          </div>
+          <div class="field">
+            <label for="ethnicity">Ethnicity / Race</label>
+            <input type="text" id="ethnicity" name="ethnicity" placeholder="I don't wish to answer">
+          </div>
+          <div class="field">
+            <label for="pronouns">Pronouns</label>
+            <input type="text" id="pronouns" name="pronouns" placeholder="They/them (optional)">
+          </div>
+        </div>
+      </section>
+
+      <!-- ── AI Settings ────────────────────────────────────────── -->
+      <section class="section">
+        <h2 class="section-title">AI Settings</h2>
+        <p class="section-hint">
+          Used for complex screening questions and cover letter generation.
+          Your key is stored locally and never sent anywhere except the Anthropic API.
+        </p>
+        <div class="grid-2">
+          <div class="field field--full">
+            <label for="anthropicApiKey">Anthropic API Key</label>
+            <div class="password-wrap">
+              <input type="password" id="anthropicApiKey" name="anthropicApiKey" placeholder="sk-ant-...">
+              <button type="button" id="toggleKey" class="btn-toggle" aria-label="Show/hide API key" title="Toggle visibility">
+                <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="anthropicModel">Model</label>
+            <select id="anthropicModel" name="anthropicModel">
+              <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fast, cheap)</option>
+              <option value="claude-sonnet-4-5-20251022">claude-sonnet-4-5 (balanced)</option>
+              <option value="claude-opus-4-5">claude-opus-4-5 (most capable)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Actions ────────────────────────────────────────────── -->
+      <div class="actions">
+        <button type="submit" id="saveBtn" class="btn-primary">Save Profile</button>
+        <span id="saveConfirm" class="save-confirm hidden" role="status" aria-live="polite">Saved!</span>
+      </div>
+
+    </form>
+
+    <!-- ── Recurring Gaps ─────────────────────────────────────── -->
+    <section class="section">
+      <h2 class="section-title">Recurring Gaps Across Job Descriptions</h2>
+      <p class="section-hint">
+        Every time you run "Check Profile Match" on a job description, the requirements your profile is missing
+        get tallied here by underlying concept (so "change management" and "managing organizational change" count
+        as the same thing). Items that show up often — and were judged safe to add — are strong candidates for
+        your resume. Items that recur but stay risky point to a real skill gap worth closing.
+      </p>
+      <div id="insightsEmpty" class="insights-empty hidden">No recurring gaps tracked yet — run a few profile matches to build this up.</div>
+      <div id="insightsTableWrap" class="insights-table-wrap hidden">
+        <table class="insights-table">
+          <thead>
+            <tr>
+              <th>Requirement</th>
+              <th>Seen</th>
+              <th>Safe to add</th>
+              <th>Risky</th>
+              <th>Last seen</th>
+            </tr>
+          </thead>
+          <tbody id="insightsBody"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button type="button" id="clearInsightsBtn" class="btn-secondary">Clear tracked gaps</button>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="../utils/resumeParser.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

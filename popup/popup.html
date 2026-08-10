@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JobPilot</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+
+    <header class="header">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="22" height="22" rx="5" fill="#0a66c2"/>
+          <path d="M5 8h12M5 11h8M5 14h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">JobPilot</span>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <!-- Setup required -->
+      <div id="setupRequired" class="setup-required hidden">
+        <div class="setup-icon">&#128203;</div>
+        <p class="setup-msg">Complete setup to start filling applications.</p>
+        <button id="setupBtn" class="btn-primary">Start Setup</button>
+      </div>
+
+      <!-- Fill UI -->
+      <div id="fillUI">
+
+        <!-- Fill button -->
+        <button id="fillBtn" class="btn-primary" aria-label="Fill this page's job application form">
+          <span class="btn-icon" aria-hidden="true">&#10024;</span>
+          Fill This Page
+        </button>
+
+        <!-- Status / spinner -->
+        <div id="status" class="status status--idle" role="status" aria-live="polite">
+          Ready to fill
+        </div>
+
+        <div id="spinner" class="spinner hidden" role="status">
+          <div class="spinner-ring"></div>
+          <span id="phaseText" class="spinner-text">Scanning fields&hellip;</span>
+        </div>
+
+        <!-- Progress bar -->
+        <div id="progressBar" class="progress hidden">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+
+        <!-- Live field log — persists after fill -->
+        <div id="fieldLog" class="field-log hidden" aria-live="polite"></div>
+
+        <!-- ── Applied tracker ────────────────────────────────────────── -->
+        <div id="appliedSection" class="applied-section hidden">
+          <div id="appliedWarning" class="applied-warning hidden"></div>
+          <button id="markAppliedBtn" class="btn-applied">
+            <span class="applied-btn-icon" aria-hidden="true">&#9989;</span>
+            <span class="applied-btn-text">
+              <span id="appliedBtnTitle" class="applied-btn-title">Mark as Applied</span>
+              <span id="appliedBtnMeta" class="applied-btn-meta"></span>
+            </span>
+          </button>
+        </div>
+
+        <!-- ── Cover Letter Generator ─────────────────────────────────── -->
+        <div class="cl-divider">
+          <button id="clToggleBtn" class="btn-cl-toggle">
+            <span>&#9997;</span> Check Profile Match and Generate Cover Letter
+            <span id="clChevron" class="chevron">&#9660;</span>
+          </button>
+        </div>
+
+        <div id="clPanel" class="cl-panel hidden">
+          <label class="cl-label" for="jobDescription">Paste the job description</label>
+          <textarea id="jobDescription" class="cl-textarea" rows="5"
+            placeholder="Copy and paste the full job posting here&#8230;"></textarea>
+
+          <button id="matchBtn" class="btn-match">
+            <span>&#127919;</span> Check Profile Match
+          </button>
+
+          <div id="matchResult" class="match-result hidden">
+            <div class="match-score-row">
+              <span id="matchScoreBadge" class="match-score-badge">--</span>
+              <span id="matchSummary" class="match-summary"></span>
+            </div>
+            <div class="match-chips-block">
+              <div class="match-chips-label">Matched</div>
+              <div id="matchedChips" class="match-chips"></div>
+            </div>
+            <div class="match-chips-block">
+              <div class="match-chips-label">Gaps</div>
+              <div id="missingChips" class="match-chips match-chips--gap"></div>
+              <div class="match-chips-hint">✓ reasonable to add to your profile &middot; &#9888; would misrepresent you (hover for why)</div>
+            </div>
+          </div>
+
+          <button id="genCoverBtn" class="btn-generate">
+            <span>&#10022;</span> Generate Cover Letter with AI
+          </button>
+
+          <div id="clResult" class="hidden">
+            <div class="cl-result-header">
+              <span class="cl-result-label">Cover Letter</span>
+              <div class="cl-result-actions">
+                <button id="downloadCoverBtn" class="btn-copy">Download PDF</button>
+                <button id="copyCoverBtn" class="btn-copy">Copy</button>
+              </div>
+            </div>
+            <textarea id="coverLetterText" class="cl-output" rows="9" readonly></textarea>
+          </div>
+
+          <div id="clStatus" class="cl-status hidden"></div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <footer class="footer">
+      <a href="#" id="settingsLink" class="settings-link">
+        <span aria-hidden="true">&#9881;</span> Settings
+      </a>
+    </footer>
+
+  </div>
+  <script src="../utils/pdf.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
