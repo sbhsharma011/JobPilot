@@ -32,6 +32,21 @@
     return btoa(binary);
   }
 
+  // <w:t> content is raw XML, so "R&D" arrives as "R&amp;D". Left encoded,
+  // Claude sees (and copies into edit anchors) text that doesn't exist in
+  // the document as Word renders it, and those edits can never be located.
+  // &amp; is decoded last so "&amp;lt;" correctly becomes "&lt;", not "<".
+  function decodeXmlEntities(str) {
+    return str
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+      .replace(/&amp;/g, '&');
+  }
+
   // A .docx is a ZIP archive containing word/document.xml with the visible
   // text inside <w:t> elements. This reads the ZIP central directory to
   // locate that entry, decompresses it with the browser's built-in
@@ -96,7 +111,7 @@
 
     let text = '';
     for (const para of xml.split(/<\/w:p>/)) {
-      const paraText = [...para.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(m => m[1]).join('');
+      const paraText = [...para.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(m => decodeXmlEntities(m[1])).join('');
       if (paraText) text += paraText + '\n';
     }
     return text.trim();

@@ -70,7 +70,7 @@
         <!-- ── Cover Letter Generator ─────────────────────────────────── -->
         <div class="cl-divider">
           <button id="clToggleBtn" class="btn-cl-toggle">
-            <span>&#9997;</span> Check Profile Match and Generate Cover Letter
+            <span>&#9997;</span> Match, Cover Letter &amp; Resume Tailoring
             <span id="clChevron" class="chevron">&#9660;</span>
           </button>
         </div>
@@ -115,6 +115,51 @@
             <textarea id="coverLetterText" class="cl-output" rows="9" readonly></textarea>
           </div>
 
+          <!-- ── Tailor Resume ─────────────────────────────────────────── -->
+          <div class="cl-divider">
+            <span class="cl-label">Tailor Resume to This Job</span>
+          </div>
+
+          <div class="upload-zone" id="resumeUploadZone">
+            <div class="upload-icon">📎</div>
+            <div class="upload-label">Drop your resume (.docx) or <span class="link">click to browse</span></div>
+            <div class="upload-hint">DOCX only — needed to write edits back into the file</div>
+            <input type="file" id="resumeFileInput" accept=".docx" hidden>
+          </div>
+          <div id="resumeUploadStatus" class="upload-status hidden"></div>
+
+          <button id="suggestEditsBtn" class="btn-generate" disabled>
+            <span>&#128161;</span> Suggest Resume Edits
+          </button>
+
+          <div id="suggestionsResult" class="suggestions-result hidden">
+            <div class="ats-panel">
+              <div class="ats-header">
+                <span class="ats-title">ATS keyword match</span>
+                <span class="ats-scores">
+                  <span id="atsBaseline" class="ats-score"></span>
+                  <span class="ats-arrow">&rarr;</span>
+                  <span id="atsProjected" class="ats-score ats-score--projected"></span>
+                </span>
+              </div>
+              <div class="ats-bar">
+                <div id="atsBarBase" class="ats-bar-base"></div>
+                <div id="atsBarGain" class="ats-bar-gain"></div>
+                <div class="ats-bar-target" title="Target"></div>
+              </div>
+              <div id="atsCaption" class="ats-caption"></div>
+              <div id="atsGaps" class="ats-gaps hidden">
+                <div class="ats-gaps-label">Still missing — tick only what you genuinely have real experience with:</div>
+                <div id="atsGapList" class="ats-gap-list"></div>
+                <button id="addConfirmedBtn" class="btn-copy" disabled>Add edits for ticked skills</button>
+              </div>
+            </div>
+            <div id="suggestionsList" class="suggestions-list"></div>
+            <div class="suggestions-actions">
+              <button id="applyEditsBtn" class="btn-primary">Apply Selected &amp; Download</button>
+            </div>
+          </div>
+
           <div id="clStatus" class="cl-status hidden"></div>
         </div>
 
@@ -130,6 +175,9 @@
 
   </div>
   <script src="../utils/pdf.js"></script>
+  <script src="../utils/resumeParser.js"></script>
+  <script src="../utils/docxEditor.js"></script>
+  <script src="../utils/atsScore.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

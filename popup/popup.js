@@ -45,9 +45,44 @@ const matchSummaryEl    = document.getElementById('matchSummary');
 const matchedChipsEl    = document.getElementById('matchedChips');
 const missingChipsEl    = document.getElementById('missingChips');
 
+// Tailor Resume
+const resumeUploadZone   = document.getElementById('resumeUploadZone');
+const resumeFileInput    = document.getElementById('resumeFileInput');
+const resumeUploadStatus = document.getElementById('resumeUploadStatus');
+const suggestEditsBtn    = document.getElementById('suggestEditsBtn');
+const suggestionsResult  = document.getElementById('suggestionsResult');
+const suggestionsList    = document.getElementById('suggestionsList');
+const applyEditsBtn      = document.getElementById('applyEditsBtn');
+const atsBaselineEl      = document.getElementById('atsBaseline');
+const atsProjectedEl     = document.getElementById('atsProjected');
+const atsBarBase         = document.getElementById('atsBarBase');
+const atsBarGain         = document.getElementById('atsBarGain');
+const atsCaption         = document.getElementById('atsCaption');
+const atsGaps            = document.getElementById('atsGaps');
+const atsGapList         = document.getElementById('atsGapList');
+const addConfirmedBtn    = document.getElementById('addConfirmedBtn');
+
 let lastJobTitle = '';
 let lastJobCompany = '';
 let lastCandidateName = '';
+
+// Tailor Resume state — the raw file bytes are kept in memory (never sent
+// anywhere except the extracted text, to Claude) so edits can be written
+// back into an exact copy of the original .docx without re-uploading.
+let uploadedResumeBuffer = null;
+let uploadedResumeText = '';
+let currentSuggestions = [];
+let suggestionSeq = 0;        // suggestion ids stay unique across merged passes
+let atsKeywords = [];         // the JD's ATS keyword list, from Claude
+let baselineScore = 0;        // match % of the resume as uploaded
+let tailorJd = '';            // JD the current keywords/suggestions were built for
+const gapTicked = new Set();  // missing keywords the user confirmed they genuinely have
+
+const ATS_TARGET = 95;
+// Larger than JobPilotResume.MAX_TEXT_CHARS (a storage cap for the profile):
+// the Skills section often sits at the end of a resume, and truncating it
+// away hides exactly the lines that matter most for keyword matching.
+const TAILOR_MAX_CHARS = 15000;
 
 // Applied tracker state — set by initAppliedTracker() for the active tab.
 // Deliberately separate from lastJobTitle/lastJobCompany above: those are
@@ -635,6 +670,392 @@ function showClStatus(msg, type) {
   clStatus.className   = `cl-status ${type}`;
   clStatus.classList.remove('hidden');
 }
+
+// ─── Tailor Resume ────────────────────────────────────────────────────────────
+//
+// Auto-apply only works for .docx: it's a ZIP of structured XML where text
+// lives in formatting-tagged nodes, so a targeted edit can be written back
+// without disturbing layout. A PDF has no equivalent safe path — its text is
+// fixed-position, not reflowable — so suggestions for a PDF resume would
+// have nowhere reliable to be written back to; this panel only accepts .docx.
+
+function setResumeUploadStatus(text, type = 'info') {
+  resumeUploadStatus.textContent = text;
+  resumeUploadStatus.className = `upload-status ${type}`;
+  resumeUploadStatus.classList.remove('hidden');
+}
+
+function truncate(str, n) {
+  str = str || '';
+  return str.length > n ? str.slice(0, n) + '…' : str;
+}
+
+async function handleTailorResumeUpload(file) {
+  const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    || /\.docx$/i.test(file.name);
+  if (!isDocx) {
+    setResumeUploadStatus('Please upload a .docx file — auto-apply only works with Word documents.', 'error');
+    return;
+  }
+
+  resumeUploadZone.classList.add('processing');
+  setResumeUploadStatus('Reading file…', 'info');
+  suggestEditsBtn.disabled = true;
+  suggestionsResult.classList.add('hidden');
+
+  try {
+    const buffer = await file.arrayBuffer();
+    const text = (await JobPilotResume.extractDocxText(buffer)).slice(0, TAILOR_MAX_CHARS);
+    if (!text.trim()) {
+      setResumeUploadStatus('Could not read any text from that file.', 'error');
+      return;
+    }
+    uploadedResumeBuffer = buffer;
+    uploadedResumeText = text;
+    currentSuggestions = [];
+    atsKeywords = [];
+    gapTicked.clear();
+    setResumeUploadStatus(`✅ "${file.name}" loaded (${text.length.toLocaleString()} characters).`, 'success');
+    suggestEditsBtn.disabled = false;
+  } catch (err) {
+    setResumeUploadStatus('Error reading file: ' + err.message, 'error');
+  } finally {
+    resumeUploadZone.classList.remove('processing');
+  }
+}
+
+resumeUploadZone.addEventListener('click', () => resumeFileInput.click());
+resumeUploadZone.addEventListener('dragover', e => { e.preventDefault(); resumeUploadZone.classList.add('dragover'); });
+resumeUploadZone.addEventListener('dragleave', () => resumeUploadZone.classList.remove('dragover'));
+resumeUploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  resumeUploadZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleTailorResumeUpload(file);
+});
+resumeFileInput.addEventListener('change', () => {
+  if (resumeFileInput.files[0]) handleTailorResumeUpload(resumeFileInput.files[0]);
+  resumeFileInput.value = '';
+});
+
+// ─── ATS scoring & suggestion state ──────────────────────────────────────────
+//
+// The flow is: Claude extracts the JD's ATS keyword list → the match % is
+// computed locally (utils/atsScore.js) → Claude drafts edits for the missing
+// keywords the resume genuinely evidences → if the projection is still under
+// target, one more pass on just the remaining gaps → whatever is left is
+// shown as an "I genuinely have this" checklist, the only route by which a
+// keyword not already backed by the resume text gets written in.
+
+const SUGGESTION_KIND_LABELS = {
+  skills: 'Skills line', summary: 'Summary', headline: 'Headline',
+  reword: 'Reword', 'insert-bullet': 'Add new line',
+};
+
+function normalizedAnchor(str) {
+  return JobPilotDocxEditor.stripLeadingBullet(str).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+// A new edit with the same anchor as an existing one supersedes it in
+// place — later passes are told to fold the earlier change into theirs.
+function mergeSuggestions(incoming) {
+  for (const raw of incoming) {
+    const s = { ...raw, id: `s${++suggestionSeq}` };
+    s.locatable = JobPilotAts.canLocate(uploadedResumeText, s.anchor);
+    s.checked = s.locatable;
+    const idx = currentSuggestions.findIndex(e => normalizedAnchor(e.anchor) === normalizedAnchor(s.anchor));
+    if (idx !== -1) currentSuggestions[idx] = s;
+    else currentSuggestions.push(s);
+  }
+}
+
+// New lines go in before rewording: an insert clones its anchor line, so it
+// has to run while that line still reads the way the anchor quotes it.
+function inApplyOrder(edits) {
+  return [
+    ...edits.filter(e => e.type === 'insert-bullet'),
+    ...edits.filter(e => e.type !== 'insert-bullet'),
+  ];
+}
+
+function projectSelection() {
+  const selected = inApplyOrder(currentSuggestions.filter(s => s.checked));
+  const sim = JobPilotAts.applyEditsToText(uploadedResumeText, selected);
+  const appliedIds = new Set(sim.results.filter(r => r.applied).map(r => r.id));
+  return { selected, appliedIds, ...JobPilotAts.scoreResume(sim.text, atsKeywords) };
+}
+
+function keywordOptions() {
+  const baseline = JobPilotAts.scoreResume(uploadedResumeText, atsKeywords);
+  return { matchedKeywords: baseline.matched, missingKeywords: baseline.missing };
+}
+
+function existingEditsPayload() {
+  return currentSuggestions.filter(s => s.checked).map(({ kind, anchor, newText }) => ({ kind, anchor, newText }));
+}
+
+async function requestEdits(profile, options) {
+  const resp = await chrome.runtime.sendMessage({
+    action: 'suggestResumeEdits', profile, resumeText: uploadedResumeText, jobDescription: tailorJd, options,
+  });
+  if (resp?.error) throw new Error(resp.error);
+  return resp?.suggestions || [];
+}
+
+function renderAtsPanel() {
+  const proj = projectSelection();
+
+  atsBaselineEl.textContent = `${baselineScore}%`;
+  atsProjectedEl.textContent = `${proj.score}%`;
+  atsProjectedEl.classList.toggle('ats-score--good', proj.score >= ATS_TARGET);
+  const low = Math.min(baselineScore, proj.score);
+  atsBarBase.style.width = `${low}%`;
+  atsBarGain.style.left = `${low}%`;
+  atsBarGain.style.width = `${Math.max(0, proj.score - baselineScore)}%`;
+  atsCaption.textContent =
+    `${proj.matched.length} of ${atsKeywords.length} job keywords covered with the selected edits (target ${ATS_TARGET}%). ` +
+    'Estimated the way a literal keyword scan scores it, weighted toward required hard skills.';
+
+  // Edits that locate fine alone but not after an earlier selected edit
+  // rewrote the same text.
+  for (const el of suggestionsList.querySelectorAll('[data-conflict-for]')) {
+    const s = currentSuggestions.find(x => x.id === el.dataset.conflictFor);
+    el.classList.toggle('hidden', !(s?.checked && s.locatable && !proj.appliedIds.has(s.id)));
+  }
+
+  const gaps = [...proj.missing].sort((a, b) => JobPilotAts.keywordWeight(b) - JobPilotAts.keywordWeight(a));
+  for (const term of [...gapTicked]) {
+    if (!gaps.some(k => k.term === term)) gapTicked.delete(term);
+  }
+  atsGapList.innerHTML = gaps.map(k => `
+    <label class="ats-gap${k.importance === 'required' ? ' ats-gap--required' : ''}" title="${k.importance}">
+      <input type="checkbox" data-term="${escapeHtml(k.term)}" ${gapTicked.has(k.term) ? 'checked' : ''}>
+      ${escapeHtml(k.term)}
+    </label>`).join('');
+  atsGaps.classList.toggle('hidden', !gaps.length);
+  addConfirmedBtn.disabled = !gapTicked.size;
+}
+
+function renderSuggestions() {
+  suggestionsList.innerHTML = currentSuggestions.map(s => {
+    const manual = !s.locatable;
+    const isInsert = s.type === 'insert-bullet';
+    const oldBlock = isInsert
+      ? `<div class="suggestion-context">After: "${escapeHtml(truncate(s.anchor, 70))}"</div>`
+      : `<div class="suggestion-old">${escapeHtml(s.anchor)}</div>`;
+    // Unlocatable suggestions (the anchor isn't in the resume text as
+    // written) are unchecked by default but still selectable: the apply
+    // engine fails a bad match gracefully — reports "not found", skips it,
+    // touches nothing — so letting the user try is safe.
+    const hint = manual
+      ? `<div class="suggestion-manual-hint">Lower confidence — couldn't find this exact text in your resume. Check to try anyway; it's skipped harmlessly if not found.</div>`
+      : '';
+    const evidence = s.evidence === 'adjacent'
+      ? '<span class="suggestion-evidence" title="Built on related experience — read it and make sure you can defend it in an interview">modest claim · review</span>'
+      : s.evidence === 'confirmed'
+        ? '<span class="suggestion-evidence suggestion-evidence--confirmed">you confirmed</span>'
+        : '';
+    const kwChips = (s.keywords || []).map(k => `<span class="suggestion-kw">+ ${escapeHtml(k)}</span>`).join('');
+    return `
+      <label class="suggestion-item${manual ? ' suggestion-item--manual' : ''}" data-item-for="${escapeHtml(s.id)}">
+        <input type="checkbox" class="suggestion-check" data-id="${escapeHtml(s.id)}" ${s.checked ? 'checked' : ''}>
+        <div class="suggestion-body">
+          <div class="suggestion-type">${SUGGESTION_KIND_LABELS[s.kind] || 'Reword'}${manual ? ' · lower confidence' : ''}</div>
+          ${oldBlock}
+          <div class="suggestion-new">${isInsert ? '+ ' : ''}${escapeHtml(s.newText)}</div>
+          ${kwChips || evidence ? `<div class="suggestion-meta">${kwChips}${evidence}</div>` : ''}
+          <div class="suggestion-reason">${escapeHtml(s.reason || '')}</div>
+          ${hint}
+          <div class="suggestion-conflict hidden" data-conflict-for="${escapeHtml(s.id)}">Overlaps another selected edit — only one of them can apply.</div>
+        </div>
+      </label>`;
+  }).join('');
+  suggestionsResult.classList.remove('hidden');
+  renderAtsPanel();
+}
+
+suggestionsList.addEventListener('change', e => {
+  if (!e.target.classList.contains('suggestion-check')) return;
+  const s = currentSuggestions.find(x => x.id === e.target.dataset.id);
+  if (s) s.checked = e.target.checked;
+  renderAtsPanel();
+});
+
+atsGapList.addEventListener('change', e => {
+  const term = e.target.dataset?.term;
+  if (!term) return;
+  if (e.target.checked) gapTicked.add(term);
+  else gapTicked.delete(term);
+  addConfirmedBtn.disabled = !gapTicked.size;
+});
+
+async function getTailorProfile() {
+  const profileResp = await chrome.runtime.sendMessage({ action: 'getProfile' });
+  const profile = profileResp?.profile;
+  if (!profile?.anthropicApiKey?.trim()) throw new Error('Add your Anthropic API key in Settings first.');
+  return profile;
+}
+
+suggestEditsBtn.addEventListener('click', async () => {
+  let jd = jobDescription.value.trim();
+  if (!jd) {
+    await autoDetectJobDescription();
+    jd = jobDescription.value.trim();
+  }
+  if (!jd) {
+    showClStatus('Could not detect a job description on this page — paste it manually above.', 'error');
+    return;
+  }
+  if (!uploadedResumeText) {
+    showClStatus('Upload your resume (.docx) first.', 'error');
+    return;
+  }
+
+  const setBusy = (label) => { suggestEditsBtn.textContent = `⟳ ${label}`; };
+  suggestEditsBtn.disabled = true;
+  setBusy('Reading job keywords…');
+  suggestionsResult.classList.add('hidden');
+  clStatus.classList.add('hidden');
+
+  try {
+    const profile = await getTailorProfile();
+
+    const kwResp = await chrome.runtime.sendMessage({ action: 'extractAtsKeywords', profile, jobDescription: jd });
+    if (kwResp?.error) throw new Error(kwResp.error);
+
+    atsKeywords = kwResp.keywords || [];
+    tailorJd = jd;
+    currentSuggestions = [];
+    gapTicked.clear();
+    baselineScore = JobPilotAts.scoreResume(uploadedResumeText, atsKeywords).score;
+
+    setBusy('Drafting edits…');
+    mergeSuggestions(await requestEdits(profile, keywordOptions()));
+
+    const proj = projectSelection();
+    if (proj.score < ATS_TARGET && proj.missing.length) {
+      setBusy('Second pass on remaining gaps…');
+      try {
+        mergeSuggestions(await requestEdits(profile, {
+          ...keywordOptions(),
+          existingEdits: existingEditsPayload(),
+          focusTerms: proj.missing.map(k => k.term),
+        }));
+      } catch (err) {
+        // The first pass already produced something usable — don't throw it away.
+        console.warn('[JobPilot] Second tailoring pass failed:', err);
+      }
+    }
+
+    renderSuggestions();
+    if (!currentSuggestions.length) {
+      showClStatus('No edits your resume can honestly back up for the missing keywords — tick any you genuinely have above.', 'info');
+    }
+  } catch (err) {
+    showClStatus(err.message || 'Unknown error', 'error');
+  } finally {
+    suggestEditsBtn.disabled = false;
+    suggestEditsBtn.innerHTML = '<span>&#128161;</span> Suggest Resume Edits';
+  }
+});
+
+addConfirmedBtn.addEventListener('click', async () => {
+  const terms = [...gapTicked];
+  if (!terms.length) return;
+
+  addConfirmedBtn.disabled = true;
+  addConfirmedBtn.textContent = '⟳ Adding…';
+  clStatus.classList.add('hidden');
+
+  try {
+    const profile = await getTailorProfile();
+    const added = await requestEdits(profile, {
+      ...keywordOptions(),
+      existingEdits: existingEditsPayload(),
+      confirmedTerms: terms,
+      focusTerms: terms,
+    });
+    if (!added.length) {
+      showClStatus('Could not find a place in your resume to add those — try adding a Skills line first.', 'warn');
+      return;
+    }
+    mergeSuggestions(added);
+    gapTicked.clear();
+    renderSuggestions();
+  } catch (err) {
+    showClStatus(err.message || 'Unknown error', 'error');
+  } finally {
+    addConfirmedBtn.textContent = 'Add edits for ticked skills';
+    addConfirmedBtn.disabled = !gapTicked.size;
+  }
+});
+
+function buildTailoredResumeFilename() {
+  const sanitize = (s) => (s || '').replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
+  const parts = [lastCandidateName, lastJobCompany].map(sanitize).filter(Boolean);
+  const base = parts.length ? parts.join('_') : 'Resume';
+  return `${base}_Tailored.docx`;
+}
+
+applyEditsBtn.addEventListener('click', async () => {
+  // Any checked box is attempted, including lower-confidence ones the user
+  // opted into — the docx engine itself is what decides whether an anchor
+  // can actually be found, and reports per-item success/failure either way.
+  const selected = inApplyOrder(currentSuggestions.filter(s => s.checked));
+
+  if (!selected.length) {
+    showClStatus('Select at least one suggestion to apply.', 'error');
+    return;
+  }
+  if (!uploadedResumeBuffer) {
+    showClStatus('Resume file no longer available — please re-upload.', 'error');
+    return;
+  }
+
+  applyEditsBtn.disabled = true;
+  applyEditsBtn.textContent = '⟳ Applying…';
+
+  try {
+    const { blob, results } = await JobPilotDocxEditor.applyEditsToDocx(uploadedResumeBuffer, selected);
+
+    const appliedIds = new Set(results.filter(r => r.applied).map(r => r.id));
+    const failed = results.filter(r => !r.applied);
+    for (const el of suggestionsList.querySelectorAll('[data-item-for]')) {
+      el.classList.toggle('suggestion-item--failed', failed.some(r => r.id === el.dataset.itemFor));
+    }
+
+    // Score what actually landed in the file, not what was selected.
+    const finalText = JobPilotAts.applyEditsToText(uploadedResumeText, selected.filter(s => appliedIds.has(s.id))).text;
+    const finalScore = JobPilotAts.scoreResume(finalText, atsKeywords).score;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = buildTailoredResumeFilename();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    if (failed.length) {
+      showClStatus(
+        `Applied ${appliedIds.size}/${selected.length} — downloaded, ATS keyword match now ~${finalScore}%. ${failed.length} (highlighted in red) could not be located in the file and were skipped.`,
+        'warn'
+      );
+    } else {
+      showClStatus(
+        `✅ Applied ${appliedIds.size} change${appliedIds.size === 1 ? '' : 's'} — downloaded as a new file, ATS keyword match now ~${finalScore}%. Your original resume was not modified.`,
+        'success'
+      );
+    }
+  } catch (err) {
+    console.error('[JobPilot] Resume edit apply failed:', err);
+    showClStatus('Could not apply edits: ' + err.message, 'error');
+  } finally {
+    applyEditsBtn.disabled = false;
+    applyEditsBtn.textContent = 'Apply Selected & Download';
+  }
+});
 
 // ─── Applied tracker ────────────────────────────────────────────────────────
 //
